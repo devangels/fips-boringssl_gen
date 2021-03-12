@@ -19,9 +19,7 @@ declare_args() {
 # Config for us and everybody else depending on BoringSSL.
 config("external_config") {
   include_dirs = [ "src/include" ]
-  if (is_component_build) {
-    defines = [ "BORINGSSL_SHARED_LIBRARY" ]
-  }
+  defines = [ "BORINGSSL_SHARED_LIBRARY" ]
 }
 
 # Config internal to this build file, shared by boringssl and boringssl_fuzzer.
@@ -116,6 +114,21 @@ source_set("crypto") {
   configs += [ "//build/config/compiler:no_chromium_code" ]
 }
 
+source_set("fips") {
+  home_dir = getenv("HOME")
+  if(current_cpu == "arm64") {
+    lib_dirs = [
+      "$home_dir/boringssl/build-arm64/crypto/",
+      "$home_dir/boringssl/build-arm64/ssl/",
+    ]
+  } else if(current_cpu == "x64") {
+    lib_dirs = [
+      "$home_dir/boringssl/build-x86_64/crypto/",
+      "$home_dir/boringssl/build-x86_64/ssl/",
+    ]
+  }
+}
+
 source_set("ssl") {
   sources = ssl_sources
   deps = [ ":crypto" ]
@@ -127,9 +140,11 @@ source_set("ssl") {
 
 component("boringssl") {
   public_deps = [
-    ":crypto",
-    ":ssl"
+    ":fips"
   ]
-
+  libs = [
+    "crypto",
+    "ssl"
+  ]
   public_configs = [ ":external_config" ]
 }
